@@ -358,17 +358,9 @@
             const lines = text.split('\n');
             const messages = [];
             let currentMessage = null;
-            let isFirstLine = true; // 첫 줄 체크용
-        
+
             for (const line of lines) {
-                if (isFirstLine) {
-                    isFirstLine = false;
-                    continue; // 헤더 라인 스킵
-                }
-        
-                // 세션의 첫 메시지 체크 (콤마로 구분된 최소 4개의 필드가 있는지)
-                const commaCount = (line.match(/,/g) || []).length;
-                if (commaCount >= 3) {
+                if (line.match(/^\d+,/)) {
                     if (currentMessage) {
                         messages.push(currentMessage);
                     }
@@ -384,12 +376,17 @@
                     currentMessage.content.push(line);
                 }
             }
-        
+
             if (currentMessage) {
                 messages.push(currentMessage);
             }
-        
-            return messages;
+
+            return messages.map(msg => ({
+                sessionId: msg.sessionId,
+                messageId: msg.messageId,
+                role: msg.role,
+                content: msg.content.join('\n').trim()
+            }));
         }
 
         function parseCSVLine(line) {
@@ -432,7 +429,7 @@
         }
 
         function updateSessionLists() {
-            const sessions = [...new Set(allMessages.map(m => m.sessionId))].filter(Boolean);
+            const sessions = [...new Set(allMessages.map(m => m.sessionId))];
             const leftSelect = document.getElementById('leftSessionSelect');
             const rightSelect = document.getElementById('rightSessionSelect');
             const leftValue = leftSelect.value;
@@ -441,7 +438,7 @@
             leftSelect.innerHTML = '<option value="all">All Sessions</option>';
             rightSelect.innerHTML = '<option value="all">All Sessions</option>';
             
-            sessions.sort().forEach(session => {
+            sessions.forEach(session => {
                 [leftSelect, rightSelect].forEach(select => {
                     const option = document.createElement('option');
                     option.value = session;
@@ -449,10 +446,11 @@
                     select.appendChild(option);
                 });
             });
-        
+
             if (sessions.includes(leftValue)) leftSelect.value = leftValue;
             if (sessions.includes(rightValue)) rightSelect.value = rightValue;
         }
+
         function filterMessagesBySession(messages, sessionId) {
             if (sessionId === 'all') return messages;
             return messages.filter(m => m.sessionId === sessionId);
@@ -468,36 +466,36 @@
         }
 
         function displayMessagesInContainer(containerId, sessionId) {
-            const container = document.getElementById(containerId);
-            const filteredMessages = filterMessagesBySession(allMessages, sessionId);
-            
-            container.innerHTML = '';
-            
-            filteredMessages.forEach(message => {
-                const messageDiv = document.createElement('div');
-                const roleClass = getRoleClass(message.role);
-                messageDiv.className = `message ${roleClass}`;
-
-                const roleDiv = document.createElement('div');
-                roleDiv.className = 'message-role';
-                const roleIcon = roleIcons[message.role] || '💬';
-                roleDiv.textContent = `${roleIcon} ${message.role || 'Unknown'}`;
-
-                const contentDiv = document.createElement('div');
-                contentDiv.className = 'message-content';
-                contentDiv.innerHTML = marked.parse(message.content);
-
-                messageDiv.appendChild(roleDiv);
-                messageDiv.appendChild(contentDiv);
-                container.appendChild(messageDiv);
-            });
-        }
-
-        // 페이지 로드시 저장된 데이터 불러오기
-        document.addEventListener('DOMContentLoaded', function() {
-            updateFileNameDisplay(null);
-            loadFromLocalStorage();
-        });
-    </script>
-</body>
-</html>
+                    const container = document.getElementById(containerId);
+                    const filteredMessages = filterMessagesBySession(allMessages, sessionId);
+                    
+                    container.innerHTML = '';
+                    
+                    filteredMessages.forEach(message => {
+                        const messageDiv = document.createElement('div');
+                        const roleClass = getRoleClass(message.role);
+                        messageDiv.className = `message ${roleClass}`;
+        
+                        const roleDiv = document.createElement('div');
+                        roleDiv.className = 'message-role';
+                        const roleIcon = roleIcons[message.role] || '💬';
+                        roleDiv.textContent = `${roleIcon} ${message.role || 'Unknown'}`;
+        
+                        const contentDiv = document.createElement('div');
+                        contentDiv.className = 'message-content';
+                        contentDiv.innerHTML = marked.parse(message.content);
+        
+                        messageDiv.appendChild(roleDiv);
+                        messageDiv.appendChild(contentDiv);
+                        container.appendChild(messageDiv);
+                    });
+                }
+        
+                // 페이지 로드시 저장된 데이터 불러오기
+                document.addEventListener('DOMContentLoaded', function() {
+                    updateFileNameDisplay(null);
+                    loadFromLocalStorage();
+                });
+            </script>
+        </body>
+        </html>
