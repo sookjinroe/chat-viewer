@@ -365,9 +365,17 @@
             const lines = text.split('\n');
             const messages = [];
             let currentMessage = null;
-
+            let isFirstLine = true; // 첫 줄 체크용
+        
             for (const line of lines) {
-                if (line.match(/^[^,]+,/)) {
+                if (isFirstLine) {
+                    isFirstLine = false;
+                    continue; // 헤더 라인 스킵
+                }
+        
+                // 세션의 첫 메시지 체크 (콤마로 구분된 최소 4개의 필드가 있는지)
+                const commaCount = (line.match(/,/g) || []).length;
+                if (commaCount >= 3) {
                     if (currentMessage) {
                         messages.push(currentMessage);
                     }
@@ -383,37 +391,37 @@
                     currentMessage.content.push(line);
                 }
             }
-
+        
             if (currentMessage) {
                 messages.push(currentMessage);
             }
-
-            return messages.map(msg => ({
-                sessionId: msg.sessionId,
-                messageId: msg.messageId,
-                role: msg.role,
-                content: msg.content.join('\n').trim()
-            }));
+        
+            return messages;
         }
 
         function updateSessionList() {
-            const sessions = [...new Set(allMessages.map(m => m.sessionId))];
-            const select = document.getElementById('sessionSelect');
-            const currentValue = select.value;
+            const sessions = [...new Set(allMessages.map(m => m.sessionId))].filter(Boolean);
+            const leftSelect = document.getElementById('leftSessionSelect');
+            const rightSelect = document.getElementById('rightSessionSelect');
+            const leftValue = leftSelect.value;
+            const rightValue = rightSelect.value;
             
-            select.innerHTML = '<option value="all">All Sessions</option>';
-            sessions.forEach(session => {
-                const option = document.createElement('option');
-                option.value = session;
-                option.textContent = session;
-                select.appendChild(option);
+            leftSelect.innerHTML = '<option value="all">All Sessions</option>';
+            rightSelect.innerHTML = '<option value="all">All Sessions</option>';
+            
+            sessions.sort().forEach(session => {
+                [leftSelect, rightSelect].forEach(select => {
+                    const option = document.createElement('option');
+                    option.value = session;
+                    option.textContent = session;
+                    select.appendChild(option);
+                });
             });
-
-            if (sessions.includes(currentValue)) {
-                select.value = currentValue;
-            }
+        
+            if (sessions.includes(leftValue)) leftSelect.value = leftValue;
+            if (sessions.includes(rightValue)) rightSelect.value = rightValue;
         }
-
+        
         function filterMessagesBySession(messages, sessionId) {
             if (sessionId === 'all') return messages;
             return messages.filter(m => m.sessionId === sessionId);
