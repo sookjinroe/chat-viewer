@@ -367,7 +367,7 @@
             let currentMessage = null;
 
             for (const line of lines) {
-                if (line.match(/^\d+,/)) {
+                if (line.match(/^[^,]+,/)) {
                     if (currentMessage) {
                         messages.push(currentMessage);
                     }
