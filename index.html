@@ -202,6 +202,20 @@
             color: white;
             text-decoration: underline;
         }
+
+        .current-file {
+            margin: 12px 20px;
+            padding: 8px 12px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            color: #666;
+        }
+
+        .current-file.active {
+            background-color: #e3f2fd;
+            color: #1a73e8;
+        }
     </style>
 </head>
 <body>
@@ -216,6 +230,7 @@
                 <label>Upload your markdown file:</label>
                 <input type="file" accept=".md,.txt,.csv" id="fileInput">
             </div>
+            <div id="currentFileName" class="current-file"></div>
             <div class="controls">
                 <select id="sessionSelect" class="session-select">
                     <option value="all">All Sessions</option>
@@ -237,6 +252,39 @@
             'Assistant': '🤖',
         };
 
+        function saveToLocalStorage(file, fileContent, selectedSession) {
+            localStorage.setItem('savedFileName', file.name);
+            localStorage.setItem('savedContent', fileContent);
+            localStorage.setItem('selectedSession', selectedSession || 'all');
+            
+            updateFileNameDisplay(file.name);
+        }
+        
+        function loadFromLocalStorage() {
+            const savedContent = localStorage.getItem('savedContent');
+            const savedSession = localStorage.getItem('selectedSession') || 'all';
+            const savedFileName = localStorage.getItem('savedFileName');
+            
+            if (savedContent && savedFileName) {
+                allMessages = formatMarkdown(savedContent);
+                updateSessionList();
+                currentSession = savedSession;
+                document.getElementById('sessionSelect').value = savedSession;
+                displayMessages(filterMessagesBySession(allMessages, currentSession));
+                updateFileNameDisplay(savedFileName);
+            }
+        }
+        
+        function updateFileNameDisplay(fileName) {
+            const fileLabel = document.getElementById('currentFileName');
+            if (fileName) {
+                fileLabel.textContent = `Current file: ${fileName}`;
+                fileLabel.classList.add('active');
+            } else {
+                fileLabel.textContent = 'No file loaded';
+                fileLabel.classList.remove('active');
+            }
+        }
         marked.setOptions({
             breaks: true,
             gfm: true
@@ -290,19 +338,24 @@
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const content = e.target.result;
+                    saveToLocalStorage(file, content, 'all');
                     allMessages = formatMarkdown(content);
                     updateSessionList();
                     displayMessages(allMessages);
                 };
                 reader.readAsText(file);
             }
-        });
+        });    
 
         document.getElementById('sessionSelect').addEventListener('change', function(event) {
             currentSession = event.target.value;
+            const savedContent = localStorage.getItem('savedContent');
+            const savedFileName = localStorage.getItem('savedFileName');
+            if (savedContent && savedFileName) {
+                saveToLocalStorage({name: savedFileName}, savedContent, currentSession);
+            }
             displayMessages(filterMessagesBySession(allMessages, currentSession));
         });
-
         function formatMarkdown(text) {
             if (!text) return [];
             
@@ -390,6 +443,11 @@
                 container.appendChild(messageDiv);
             });
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            updateFileNameDisplay(null);
+            loadFromLocalStorage();
+        });
     </script>
 </body>
 </html>
