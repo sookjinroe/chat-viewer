@@ -449,7 +449,7 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             if (!localStorage.getItem('savedContent')) {
-                fetch('./default-chat.csv')
+                fetch('../default-chat.csv')
                     .then(response => response.text())
                     .then(content => {
                         saveToLocalStorage({name: 'default-chat.csv'}, content);
