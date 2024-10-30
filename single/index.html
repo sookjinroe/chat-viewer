@@ -448,8 +448,18 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            updateFileNameDisplay(null);
-            loadFromLocalStorage();
+            if (!localStorage.getItem('savedContent')) {
+                fetch('./default-chat.csv')
+                    .then(response => response.text())
+                    .then(content => {
+                        saveToLocalStorage({name: 'default-chat.csv'}, content);
+                        allMessages = formatMarkdown(content);
+                        updateSessionList();
+                        displayMessages();
+                    });
+            } else {
+                loadFromLocalStorage();
+            }
         });
     </script>
 </body>
